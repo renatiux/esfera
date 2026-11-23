@@ -199,7 +199,10 @@
     <div class="controls">
       <button class="btn-on" onclick="setAll(true)">Encender</button>
       <button onclick="setAll(false)">Apagar</button>
-      <button onclick="invertAll()">Invertir</button>
+      <button onclick="anim(1)">Anim1</button>
+      <button onclick="anim(2)">Anim2</button>
+      <button onclick="anim(3)">Anim3</button>
+      <button onclick="anim(4)">Anim4</button>
     </div>
     <a href='http://192.168.4.1/toggle' style="display: none" id="a-toggle"></a>
   </div>
@@ -266,6 +269,10 @@
         let response = fetch('http://192.168.4.1/toggleOff');
       }
       //updateState();
+    }
+
+    function anim(index) {
+      const response = fetch('http://192.168.4.1/anim?id=' + index);
     }
 
     function invertAll() {
