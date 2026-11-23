@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Control Matriz LED 5x5</title>
+  <style>
+    :root {
+      --bg-color: #121214;
+      --panel-color: #1e1e24;
+      --led-off: #2c2c35;
+      --led-on: #ff3b30; /* Rojo estilo LED clásico */
+      --led-glow: rgba(255, 59, 48, 0.65);
+      --text-color: #f4f4f6;
+      --accent: #0a84ff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent; /* Evita el destello azul al tocar en móviles */
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100dvh;
+      padding: 16px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 380px;
+      background-color: var(--panel-color);
+      padding: 24px 20px;
+      border-radius: 24px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    header {
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    p.subtitle {
+      font-size: 0.85rem;
+      color: #a0a0ab;
+      margin-top: 4px;
+    }
+
+    /* Contenedor de la Matriz 5x5 */
+    .matrix-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      width: 100%;
+      aspect-ratio: 1 / 1; /* Mantiene la matriz perfectamente cuadrada */
+      background-color: #141418;
+      padding: 16px;
+      border-radius: 18px;
+      border: 2px solid #2a2a32;
+    }
+
+    /* Estilización del Checkbox como LED */
+    .led-checkbox {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 100%;
+      height: 100%;
+      background-color: var(--led-off);
+      border-radius: 50%; /* Forma circular de LED */
+      cursor: pointer;
+      position: relative;
+      transition: all 0.15s ease-out;
+      box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.6);
+      border: 2px solid #3a3a45;
+    }
+
+    /* Brillo interno sutil */
+    .led-checkbox::after {
+      content: "";
+      position: absolute;
+      top: 18%;
+      left: 22%;
+      width: 22%;
+      height: 22%;
+      border-radius: 50%;
+      background-color: rgba(255, 255, 255, 0.15);
+      transition: background-color 0.15s;
+    }
+
+    /* Estado ENCENDIDO */
+    .led-checkbox:checked {
+      background-color: var(--led-on);
+      border-color: #ff8a80;
+      box-shadow: 
+        0 0 15px var(--led-glow),
+        0 0 30px var(--led-glow),
+        inset 0 0 8px #ffffff;
+      transform: scale(1.04);
+    }
+
+    .led-checkbox:checked::after {
+      background-color: rgba(255, 255, 255, 0.7);
+    }
+
+    /* Botones de acción rápida */
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      width: 100%;
+    }
+
+    button {
+      background-color: #2c2c35;
+      color: var(--text-color);
+      border: none;
+      padding: 12px 8px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.15s, transform 0.1s;
+    }
+
+    button:active {
+      transform: scale(0.96);
+    }
+
+    button.btn-on {
+      background-color: rgba(255, 59, 48, 0.2);
+      color: #ff6b63;
+      border: 1px solid rgba(255, 59, 48, 0.4);
+    }
+
+    button.btn-accent {
+      background-color: var(--accent);
+      color: #fff;
+    }
+
+    /* Salida de datos para microcontroladores */
+    .output-box {
+      width: 100%;
+      background-color: #141418;
+      padding: 12px;
+      border-radius: 12px;
+      font-family: "Courier New", Courier, monospace;
+      font-size: 0.8rem;
+      color: #4cd964;
+      border: 1px solid #2a2a32;
+      word-break: break-all;
+    }
+
+    .output-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      color: #8e8e98;
+      font-family: sans-serif;
+      font-size: 0.75rem;
+    }
+
+    .copy-btn {
+      padding: 4px 8px;
+      font-size: 0.7rem;
+      background-color: #25252d;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>Matriz LED 5×5</h1>
+      <p class="subtitle">Toca los LEDs para encender o apagar</p>
+    </header>
+
+    <!-- Cuadrícula generada dinámicamente con 25 checkboxes -->
+    <div class="matrix-grid" id="matrix"></div>
+
+    <!-- Controles rápidos -->
+    <div class="controls">
+      <button class="btn-on" onclick="setAll(true)">Encender</button>
+      <button onclick="setAll(false)">Apagar</button>
+      <button onclick="invertAll()">Invertir</button>
+    </div>
+    <a href='http://192.168.4.1/toggle' style="display: none" id="a-toggle"></a>
+  </div>
+
+  <script>
+    const matrixContainer = document.getElementById('matrix');
+    const binaryOutput = document.getElementById('binaryOutput');
+    const a_toggle = document.getElementById('a-toggle')
+    const rows = 5;
+    const cols = 5;
+    const checkboxes = [];
+
+    // 1. Crear los 25 checkboxes dinámicamente
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.className = 'led-checkbox';
+        cb.dataset.row = r;
+        cb.dataset.col = c;
+        cb.ariaLabel = `LED fila ${r + 1} columna ${c + 1}`;
+        
+        // Actualizar datos cada vez que cambia un checkbox
+        cb.addEventListener('change', () => {updateState(r, c)});
+        
+        matrixContainer.appendChild(cb);
+        checkboxes.push(cb);
+      }
+    }
+
+    function send(x, y) {
+      const response = fetch('http://192.168.4.1/toggle?x=' + x + '&y='+y);
+    
+      // Fetch does not throw an error on HTTP 404/500, so check response.ok
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+    }
+
+    // 2. Leer el estado de los checkboxes y generar código binario
+    function updateState(x, y) {
+      let rowStrings = [];
+      /*for (let r = 0; r < rows; r++) {
+        let bits = '';
+        for (let c = 0; c < cols; c++) {
+          const index = r * cols + c;
+          bits += checkboxes[index].checked ? '1' : '0';
+        }
+        rowStrings.push(`0b${bits}`);
+      }*/
+
+      send(x, y)
+      
+    }
+
+    // 3. Funciones de los botones
+    function setAll(state) {
+      checkboxes.forEach(cb => cb.checked = state);
+
+      if(state) {
+        let response = fetch('http://192.168.4.1/toggleOn');
+      }
+      else {
+        let response = fetch('http://192.168.4.1/toggleOff');
+      }
+      //updateState();
+    }
+
+    function invertAll() {
+      checkboxes.forEach(cb => cb.checked = !cb.checked);
+      const response = fetch('http://192.168.4.1/toggleOff');
+      //updateState();
+    }
+
+    function copyCode() {
+      const btn = document.getElementById('copyBtn');
+      btn.textContent = '¡Copiado!';
+      setTimeout(() => btn.textContent = 'Copiar', 1500);
+    }
+  </script>
+</body>
+</html>
